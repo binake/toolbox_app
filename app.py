@@ -21,9 +21,9 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-insecure-key-change-me')
 # Vercel Hobby 单请求体上限 ~4.5MB，这里限制为 4MB
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
 
-# 后台登录凭据（改用环境变量，未配置时回退默认值）
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'Gavin')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
+# 后台登录凭据（仅从环境变量读取，源码中不保存任何默认值）
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'}
 
@@ -234,6 +234,9 @@ def admin_login():
         return redirect(url_for('admin_dashboard'))
     error = None
     if request.method == 'POST':
+        # 未配置环境变量时拒绝登录，避免空凭据误匹配
+        if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+            return render_template('login.html', error='后台未配置登录凭据，请设置 ADMIN_USERNAME / ADMIN_PASSWORD 环境变量')
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
@@ -300,6 +303,41 @@ def admin_edit(id):
     except Exception as e:
         print(f'[admin_edit] Error: {e}')
     return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/dbcheck')
+@login_required
+def admin_dbcheck():
+    """数据库诊断：在浏览器直接查看连接/建表/写入是否正常（调试用，可后续删除）。"""
+    import traceback
+    report = {}
+    # 1) 环境变量是否存在（只显示是否配置，不暴露具体值）
+    report['env_configured'] = {
+        'TURSO_DATABASE_URL': bool(os.environ.get('TURSO_DATABASE_URL')),
+        'TURSO_AUTH_TOKEN': bool(os.environ.get('TURSO_AUTH_TOKEN')),
+        'CLOUDINARY_URL': bool(os.environ.get('CLOUDINARY_URL')),
+    }
+    # 2) 读测试：列出表 + tools 记录数
+    try:
+        tables = query_all("SELECT name FROM sqlite_master WHERE type='table'")
+        report['tables'] = [t['name'] for t in tables]
+        report['read_test'] = 'OK'
+    except Exception as e:
+        report['read_test'] = 'FAILED'
+        report['read_error'] = str(e)
+        report['traceback'] = traceback.format_exc()
+        return report
+    # 3) 写测试：插入一条临时记录再删除，能暴露只读令牌/表缺失问题
+    try:
+        execute("INSERT INTO tools (title, version) VALUES (?, ?)", ('__dbcheck__', 'test'))
+        report['tools_count_after_insert'] = query_one('SELECT COUNT(*) AS c FROM tools')['c']
+        execute("DELETE FROM tools WHERE title = ?", ('__dbcheck__',))
+        report['write_test'] = 'OK'
+    except Exception as e:
+        report['write_test'] = 'FAILED'
+        report['write_error'] = str(e)
+        report['traceback'] = traceback.format_exc()
+    return report
 
 
 @app.route('/admin/delete/<int:id>', methods=['POST'])
