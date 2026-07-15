@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tool.title }} | STAR TOOLBOX</title>
+    <style>
+        :root {
+            --bg-dark: #090d16; --bg-panel: #111827;
+            --cyan-glow: #06b6d4; --cyan-dim: rgba(6,182,212,0.15);
+            --cyan-soft: rgba(6,182,212,0.08);
+            --text-main: #f8fafc; --text-muted: #94a3b8; --text-dim: #64748b;
+            --border-color: rgba(148,163,184,0.12);
+            --radius: 12px; --shadow-card: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-dark); color: var(--text-main); line-height: 1.6;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.15); border-radius: 3px; }
+
+        .top-nav {
+            background: #0f172a; padding: 1rem 2rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .top-nav a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+        .top-nav a:hover { color: var(--cyan-glow); }
+        .top-nav .brand { font-weight: 700; color: var(--cyan-glow); letter-spacing: 1px; }
+
+        .hero {
+            background: linear-gradient(180deg, #0f172a 0%, var(--bg-dark) 100%);
+            padding: 3rem 2rem; text-align: center;
+            border-bottom: 1px solid var(--border-color); position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: -40%; left: 50%; transform: translateX(-50%);
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, var(--cyan-dim) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-icon { font-size: 3rem; margin-bottom: 1rem; position: relative; }
+        .hero-icon img { width: 56px; height: 56px; object-fit: contain; }
+        .hero h1 {
+            font-size: 2.2rem; font-weight: 800; position: relative;
+            background: linear-gradient(135deg, var(--cyan-glow) 0%, #a78bfa 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .version-badge {
+            display: inline-block; margin-top: 0.6rem; padding: 0.3rem 0.8rem;
+            background: var(--cyan-dim); border: 1px solid rgba(6,182,212,0.25);
+            border-radius: 20px; color: var(--cyan-glow); font-size: 0.85rem; font-family: monospace;
+            position: relative;
+        }
+        .hero-meta {
+            margin-top: 1rem; display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
+            position: relative;
+        }
+        .hero-meta span { color: var(--text-dim); font-size: 0.85rem; }
+        .hero-meta span strong { color: var(--text-muted); font-weight: 500; }
+        .hero-meta a { color: var(--cyan-glow); }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 2.5rem 2rem 5rem; }
+
+        .preview-img {
+            width: 100%; max-height: 400px; object-fit: cover;
+            border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1.5rem;
+        }
+
+        .detail-section {
+            background: var(--bg-panel); border: 1px solid var(--border-color);
+            border-radius: var(--radius); padding: 2rem; margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-card);
+        }
+        .detail-section h2 {
+            font-size: 1.15rem; color: var(--cyan-glow); margin-bottom: 1.2rem;
+            padding-bottom: 0.5rem; border-bottom: 1px solid rgba(148,163,184,0.08);
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .detail-section p, .detail-section div:not(h2) { color: var(--text-muted); font-size: 0.95rem; line-height: 1.7; }
+
+        .tag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .tag-list .tag {
+            background: rgba(148,163,184,0.08); color: var(--text-muted);
+            padding: 0.25rem 0.75rem; border-radius: 4px;
+            font-size: 0.78rem; border: 1px solid rgba(148,163,184,0.1);
+        }
+
+        .timeline { position: relative; padding-left: 2.5rem; }
+        .timeline::before {
+            content: ''; position: absolute; left: 0.75rem; top: 0; bottom: 0;
+            width: 2px; background: linear-gradient(180deg, var(--cyan-glow), rgba(6,182,212,0.1));
+        }
+        .timeline-item { position: relative; padding-bottom: 2rem; }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -2.5rem; top: 0.25rem;
+            width: 14px; height: 14px; border-radius: 50%;
+            background: var(--bg-panel); border: 2px solid var(--cyan-glow);
+        }
+        .timeline-item.major::before { background: var(--cyan-glow); box-shadow: 0 0 10px var(--cyan-dim); }
+        .tl-header { display: flex; align-items: baseline; gap: 0.8rem; margin-bottom: 0.5rem; }
+        .tl-version { font-weight: 700; color: var(--cyan-glow); font-family: monospace; font-size: 0.95rem; }
+        .tl-date { font-size: 0.8rem; color: var(--text-dim); font-family: monospace; }
+        .tl-tag {
+            display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+            font-size: 0.7rem; font-weight: 600;
+            background: var(--cyan-dim); color: var(--cyan-glow); border: 1px solid rgba(6,182,212,0.2);
+        }
+        .timeline-item ul { list-style: none; padding: 0; }
+        .timeline-item ul li {
+            position: relative; padding-left: 1.2rem; color: var(--text-muted);
+            font-size: 0.88rem; line-height: 1.7;
+        }
+        .timeline-item ul li::before {
+            content: '>'; position: absolute; left: 0; color: var(--cyan-glow);
+            opacity: 0.5; font-family: monospace;
+        }
+
+        .detail-actions { display: flex; gap: 1rem; margin-top: 2rem; }
+        .btn-primary {
+            display: inline-block; background: var(--cyan-glow); color: var(--bg-dark);
+            padding: 0.65rem 1.5rem; border-radius: 6px; font-weight: 700;
+            text-decoration: none; transition: box-shadow 0.2s;
+        }
+        .btn-primary:hover { box-shadow: 0 0 16px var(--cyan-dim); }
+        .btn-outline {
+            display: inline-block; background: transparent; color: var(--cyan-glow);
+            border: 1px solid var(--cyan-glow); padding: 0.65rem 1.5rem;
+            border-radius: 6px; font-weight: 600; text-decoration: none; transition: all 0.25s;
+        }
+        .btn-outline:hover { background: var(--cyan-glow); color: var(--bg-dark); }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.6rem; }
+            .container { padding: 1.5rem 1rem 3rem; }
+            .detail-section { padding: 1.2rem; }
+            .timeline { padding-left: 1.8rem; }
+            .timeline-item::before { left: -1.8rem; width: 12px; height: 12px; }
+            .detail-actions { flex-direction: column; }
+        }
+        #m-content h3 { color: var(--cyan-glow); font-size: 1.05rem; margin-bottom: 0.6rem; }
+        #m-content p { margin-bottom: 0.5rem; }
+        #m-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 0.8rem 0; border: 1px solid var(--border-color); }
+    </style>
+</head>
+<body>
+
+<nav class="top-nav">
+    <a href="/" class="brand">STAR TOOLBOX</a>
+    <a href="/admin" style="margin-left:auto;margin-right:1.5rem;">&#x2699; 管理</a>
+    <a href="/">&#x2190; 返回首页</a>
+</nav>
+
+<div class="hero">
+    <div class="hero-icon">
+        {% if tool.icon and (tool.icon.startswith('/uploads/') or tool.icon.startswith('http')) %}
+        <img src="{{ tool.icon }}" alt="icon">
+        {% else %}
+        {{ tool.icon }}
+        {% endif %}
+    </div>
+    <h1>{{ tool.title }}</h1>
+    <span class="version-badge">{{ tool.version }}</span>
+    <div class="hero-meta">
+        <span>&#x1f4c5; <strong>{{ tool.release_date }}</strong></span>
+        {% if tool.usage_rights %}
+        <span>&#x1f512; <strong>{{ tool.usage_rights }}</strong></span>
+        {% endif %}
+        {% if tool.tool_url %}
+        <span>&#x1f517; <a href="{{ tool.tool_url }}" target="_blank"><strong>{{ tool.tool_url }}</strong></a></span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container">
+
+    {% if tool.image_url %}
+    <img src="{{ tool.image_url }}" alt="{{ tool.title }} preview" class="preview-img">
+    {% endif %}
+
+    <div class="detail-section">
+        <h2>&#x1f4cb; 工具简介</h2>
+        <p>{{ tool.description }}</p>
+    </div>
+
+    {% if tool.tags %}
+    <div class="detail-section">
+        <h2>&#x1f3f7; 核心技术</h2>
+        <div class="tag-list">
+            {% for tag in tool.tags.split(',') %}
+            <span class="tag">{{ tag.strip() }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if tool.detail_content %}
+    <div class="detail-section">
+        <h2>&#x1f4d6; 详细介绍</h2>
+        <div id="m-content">{{ tool.detail_content | safe }}</div>
+    </div>
+    {% endif %}
+
+    <div class="detail-section">
+        <h2>&#x23f1; 版本时间轴</h2>
+        <div class="timeline" id="timelineContainer">
+            {% if tool.changelog %}
+                {% set entries = tool.changelog | from_json %}
+                {% if entries and entries|length > 0 %}
+                    {% for entry in entries %}
+                    <div class="timeline-item {% if entry.tag in ['重大更新','架构重构'] %}major{% endif %}">
+                        <div class="tl-header">
+                            <span class="tl-version">{{ entry.version }}</span>
+                            <span class="tl-date">{{ entry.date }}</span>
+                            {% if entry.tag %}
+                            <span class="tl-tag">{{ entry.tag }}</span>
+                            {% endif %}
+                        </div>
+                        <ul>
+                            {% for change in entry.changes %}
+                            <li>{{ change }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: var(--text-dim);">暂无版本记录</p>
+                {% endif %}
+            {% else %}
+                <p style="color: var(--text-dim);">暂无版本记录</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-actions">
+        {% if tool.tool_url %}
+        <a href="{{ tool.tool_url }}" class="btn-primary" target="_blank">&#x1f680; 访问工具网站</a>
+        {% endif %}
+        <a href="/" class="btn-outline">&#x2190; 返回工具列表</a>
+    </div>
+
+</div>
+</body>
+</html>

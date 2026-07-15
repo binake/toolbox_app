@@ -1,0 +1,9 @@
+Flask>=2.0
+Werkzeug>=2.0
+Pillow>=9.0
+libsql-client>=0.3.1
+cloudinary>=1.36
+python-dotenv>=1.0
+Flask>=2.0
+Pillow>=9.0
+Werkzeug>=2.0

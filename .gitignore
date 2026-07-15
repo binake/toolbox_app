@@ -1,0 +1,11 @@
+.env
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.db.bak
+uploads/
+__pycache__/
+*.pyc
+.vercel
+.env.example

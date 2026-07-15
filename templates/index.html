@@ -1,0 +1,574 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STAR TOOLBOX | 星球工具百宝箱</title>
+    <!-- 在 <head> 标签内添加这段字体引入 -->
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 调整为更深邃的底色 */
+            --bg-dark: #030712;
+            /* 移除实体面板色，改为极低透明度的全息玻璃色 */
+            --bg-panel: rgba(6, 182, 212, 0.03);
+            --cyan-glow: #00f0ff; /* 提亮青色，偏向赛博朋克霓虹 */
+            --cyan-dim: rgba(0, 240, 255, 0.2);
+            --cyan-glow-soft: rgba(0, 240, 255, 0.1);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #475569;
+            /* 细线高光边框 */
+            --border-color: rgba(0, 240, 255, 0.15);
+            --shadow-card: inset 0 0 20px rgba(0, 240, 255, 0.02), 0 4px 20px rgba(0,0,0,0.5);
+            --shadow-hover: inset 0 0 30px rgba(0, 240, 255, 0.1), 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            /* 引入科幻字体组合 */
+            font-family: 'Rajdhani', -apple-system, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            /* 绘制全息 HUD 辅助网格 */
+            background-image:
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center top;
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        header {
+            /* 头部使用毛玻璃过渡，而非死板的纯色渐变 */
+            background: linear-gradient(180deg, rgba(3, 7, 18, 0.9) 0%, rgba(3, 7, 18, 0.4) 100%);
+            backdrop-filter: blur(5px);
+            padding: 4rem 2rem 3rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -60%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--cyan-dim) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-shadow: 0 0 15px var(--cyan-dim); /* 增加字体发光 */
+            color: var(--cyan-glow);
+            margin-bottom: 0.6rem;
+        }
+        header .subtitle {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 572px;
+            margin: 0 auto 1.8rem;
+            position: relative;
+        }
+        .search-container {
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .search-container input {
+            width: 100%;
+            padding: 0.85rem 1.5rem 0.85rem 3rem;
+            border: 1px solid var(--cyan-dim); /* 边框改为发光青色 */
+            border-radius: 4px; /* 钢铁侠风格很少用大圆角，多为直角或小圆角 */
+            font-size: 1rem;
+            font-family: 'Share Tech Mono', monospace; /* 搜索框使用等宽代码字体 */
+            outline: none;
+            background: rgba(0, 0, 0, 0.5); /* 半透明黑底 */
+            backdrop-filter: blur(10px); /* 搜索框毛玻璃 */
+            color: var(--cyan-glow);
+            transition: all 0.3s;
+        }
+        .search-container input::placeholder { color: var(--text-dim); }
+        .search-container input:focus {
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 0 3px var(--cyan-dim);
+        }
+        .search-container .search-icon {
+            position: absolute;
+            left: 1.1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.5rem 2rem 5rem;
+        }
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+        /* ====== 卡片重构：核心 HUD 效果 ====== */
+        .tool-card {
+            background: var(--bg-panel);
+            backdrop-filter: blur(12px); /* 强烈的玻璃通透感 */
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 0; /* 移除原来的 12px 圆角 */
+            /* 赛博机甲风切角 (右下角切掉一块) */
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-card);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* 左上角的 HUD 准星装饰 */
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 15px; height: 15px;
+            border-top: 2px solid var(--cyan-glow);
+            border-left: 2px solid var(--cyan-glow);
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: var(--shadow-hover);
+            border-color: rgba(0, 240, 255, 0.4);
+            background: rgba(0, 240, 255, 0.08); /* 悬浮时内部提亮 */
+        }
+
+        .tool-card:hover::before {
+            opacity: 1; /* 悬浮时准星点亮 */
+            box-shadow: -2px -2px 10px var(--cyan-glow);
+        }
+
+        .tool-meta, .tool-date {
+            font-family: 'Share Tech Mono', monospace; /* 版本号和日期使用机器代码字体 */
+            color: var(--cyan-glow);
+            opacity: 0.7;
+        }
+
+        .tag {
+            background: transparent;
+            color: var(--cyan-glow);
+            padding: 0.2rem 0.65rem;
+            border-radius: 2px;
+            font-size: 0.75rem;
+            font-family: 'Share Tech Mono', monospace;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            text-transform: uppercase;
+        }
+
+        .tool-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--cyan-glow-soft);
+            color: var(--cyan-glow);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            border: 1px solid rgba(6, 182, 212, 0.15);
+        }
+        .tool-icon img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .tool-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .tool-meta {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: 0.15rem;
+            font-family: monospace;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+
+
+        .tool-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            flex-grow: 1;
+            margin-bottom: 1.2rem;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(148, 163, 184, 0.08);
+            padding-top: 1rem;
+        }
+        .tool-date {
+            font-size: 0.82rem;
+            color: var(--cyan-glow);
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 0.5px;
+            padding: 0.25rem 0.6rem;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 4px;
+            background: rgba(0, 240, 255, 0.06);
+        }
+        .btn-view {
+            background: transparent;
+            color: var(--cyan-glow);
+            border: 1px solid var(--cyan-glow);
+            padding: 0.45rem 1.1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+            text-decoration: none;
+        }
+        .btn-view:hover {
+            background: var(--cyan-glow);
+            color: var(--bg-dark);
+            box-shadow: 0 0 12px var(--cyan-dim);
+        }
+        .btn-detail-link {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 80px; height: 32px; border-radius: 6px;
+            background: transparent;
+            color: var(--cyan-glow); text-decoration: none;
+            font-size: 0.85rem; font-weight: 600;
+            border: 1px solid var(--cyan-glow);
+            transition: all 0.25s;
+        }
+        .btn-detail-link:hover {
+            background: var(--cyan-glow); color: var(--bg-dark);
+            box-shadow: 0 0 12px var(--cyan-dim);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-dim);
+        }
+        .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+        .empty-state p { font-size: 1.1rem; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(9, 13, 22, 0.92);
+            backdrop-filter: blur(12px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; pointer-events: none;
+            transition: opacity 0.35s ease;
+            padding: 1rem;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-container {
+            background: var(--bg-panel);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            width: 100%;
+            max-width: 880px;
+            max-height: 88vh;
+            border-radius: 16px;
+            box-shadow: 0 0 60px rgba(6, 182, 212, 0.08);
+            display: flex; flex-direction: column;
+            transform: scale(0.92) translateY(20px);
+            transition: transform 0.35s ease;
+            overflow: hidden;
+            position: relative;
+        }
+        .modal-overlay.active .modal-container { transform: scale(1) translateY(0); }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem; right: 1.2rem;
+            background: none; border: none;
+            color: var(--text-dim);
+            font-size: 1.6rem;
+            cursor: pointer;
+            z-index: 10;
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s, color 0.2s;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+        .modal-body {
+            display: flex;
+            gap: 2rem;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .modal-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .modal-left img {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+        .modal-right {
+            flex: 1.4;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .modal-right h2 {
+            font-size: 1.5rem;
+            color: #fff;
+            font-weight: 700;
+        }
+        .modal-version {
+            color: var(--cyan-glow);
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .spec-item {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            padding: 0.35rem 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+        }
+        .spec-item:last-child { border-bottom: none; }
+        .spec-label {
+            color: var(--cyan-glow);
+            font-weight: 600;
+            white-space: nowrap;
+            min-width: 70px;
+        }
+        .spec-item span:last-child { color: var(--text-muted); }
+
+        #m-content {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1rem 1.2rem;
+            border-radius: 8px;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            border: 1px solid var(--border-color);
+            margin-top: 0.5rem;
+        }
+        #m-content h3 { color: var(--cyan-glow); font-size: 1.05rem; margin-bottom: 0.6rem; }
+        #m-content p { margin-bottom: 0.5rem; }
+        #m-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 0.6rem 0; border: 1px solid var(--border-color); }
+        .modal-section-title { color: var(--cyan-glow); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+        #m-desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.7; }
+
+        .btn-visit-tool {
+            display: block;
+            margin-top: 0.5rem;
+            background: transparent;
+            color: var(--cyan-glow);
+            text-decoration: none;
+            padding: 0.65rem 1.2rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid var(--cyan-glow);
+            transition: all 0.25s;
+            text-align: center;
+            cursor: pointer;
+        }
+        .btn-visit-tool:hover {
+            background: var(--cyan-glow);
+            color: var(--bg-dark);
+            box-shadow: 0 0 14px var(--cyan-dim);
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 2.5rem 1.2rem 2rem; }
+            header h1 { font-size: 1.8rem; }
+            .container { padding: 1.5rem 1rem 3rem; }
+            .tool-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .modal-body { flex-direction: column; padding: 1.5rem; }
+            .modal-left img { max-height: 200px; }
+            .modal-container { max-width: 100%; margin: 0.5rem; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.15); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.3); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>STAR TOOLBOX</h1>
+        <p class="subtitle">这里记录了我构建的所有独立工具、脚本与系统架构。持续迭代，保持热爱。</p>
+        <div class="search-container">
+            <span class="search-icon">&#x2315;</span>
+            <input type="text" id="searchInput" placeholder="搜索工具名称、功能或标签...">
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tool-grid" id="toolGrid">
+            {% for tool in tools %}
+            <div class="tool-card" data-title="{{ tool.title }}" data-desc="{{ tool.description }}" data-tags="{{ tool.tags }}">
+                <div class="card-header">
+<!--                    <div class="tool-icon">-->
+<!--                        {% if tool.icon and (tool.icon.startswith("/uploads/") or tool.icon.startswith("http")) %}-->
+<!--                        <img src="{{ tool.icon }}" alt="icon">-->
+<!--                        {% else %}-->
+<!--                        {{ tool.icon }}-->
+<!--                        {% endif %}-->
+<!--                    </div>-->
+                    <div>
+                        <div class="tool-title">{{ tool.title }}</div>
+                        <div class="tool-meta">{{ tool.version }}</div>
+                    </div>
+                </div>
+                <div class="tags">
+                    {% if tool.tags %}
+                    {% set tag_list = tool.tags.split(',') %}
+                    {% for tag in tag_list %}
+                    <span class="tag">{{ tag.strip() }}</span>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="tool-desc">{{ tool.description }}</div>
+                <div class="card-actions">
+                    <span class="tool-date">{{ tool.release_date }}</span>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <a href="/tool/{{ tool.id }}" class="btn-detail-link" title="软件详情">软件详情</a>
+                        <button class="btn-view"
+                                data-title="{{ tool.title }}"
+                                data-version="{{ tool.version }}"
+                                data-date="{{ tool.release_date }}"
+                                data-tags="{{ tool.tags }}"
+                                data-rights="{{ tool.usage_rights }}"
+                                data-url="{{ tool.tool_url }}"
+                                data-img="{{ tool.image_url }}"
+                                data-desc="{{ tool.description }}">
+                            快捷获取项目
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span style="font-size:3rem;margin-bottom:1rem;display:block;">&#x1f6e0;</span>
+                <p>暂无工具记录，请前往后台添加。</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-container">
+            <button class="modal-close" onclick="document.getElementById('detailModal').classList.remove('active')">&times;</button>
+            <div class="modal-body">
+                <div class="modal-left">
+                    <img id="m-img" src="" alt="预览图">
+                    <a href="#" id="m-url" class="btn-visit-tool" target="_blank">访问工具网站</a>
+                </div>
+                <div class="modal-right">
+                    <h2 id="m-title"></h2>
+                    <p class="modal-version" id="m-version"></p>
+                    <div class="tech-specs-list">
+                        <div class="spec-item"><span class="spec-label">发布日期</span><span id="m-date"></span></div>
+                        <div class="spec-item"><span class="spec-label">核心技术</span><span id="m-tags"></span></div>
+                        <div class="spec-item"><span class="spec-label">使用权限</span><span id="m-rights"></span></div>
+                    </div>
+                    <div class="modal-section">
+                        <h3 class="modal-section-title">简短描述</h3>
+                        <p id="m-desc"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.btn-view').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const d = this.dataset;
+                document.getElementById('m-title').textContent = d.title;
+                document.getElementById('m-version').textContent = d.version;
+                document.getElementById('m-date').textContent = d.date;
+                document.getElementById('m-tags').textContent = d.tags;
+                document.getElementById('m-rights').textContent = d.rights;
+                document.getElementById('m-img').src = d.img || '';
+                document.getElementById('m-img').alt = d.title + ' 预览图';
+                document.getElementById('m-url').href = d.url || '#';
+                document.getElementById('m-desc').textContent = d.desc || '';
+                document.getElementById('detailModal').classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.tool-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-view')) return;
+                const btn = this.querySelector('.btn-view');
+                if (btn) btn.click();
+            });
+        });
+
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('detailModal').classList.remove('active');
+            }
+        });
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const term = this.value.trim().toLowerCase();
+                const cards = document.querySelectorAll('.tool-card');
+                cards.forEach(card => {
+                    const title = (card.dataset.title || '').toLowerCase();
+                    const desc = (card.dataset.desc || '').toLowerCase();
+                    const tags = (card.dataset.tags || '').toLowerCase();
+                    const match = !term || title.includes(term) || desc.includes(term) || tags.includes(term);
+                    card.classList.toggle('hidden', !match);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
